@@ -3,4 +3,7 @@
     <string name="title_home">Home</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
+
+    <string name="startlocation">开始定位</string>
+    <string name="stoplocation">停止定位</string>
 </resources>
