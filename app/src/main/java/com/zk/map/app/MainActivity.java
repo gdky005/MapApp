@@ -1,21 +1,33 @@
 package com.zk.map.app;
 
+import android.Manifest;
+import android.app.Notification;
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MenuItem;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.baidu.location.BDAbstractLocationListener;
 import com.baidu.location.BDLocation;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
+import com.blankj.utilcode.util.ToastUtils;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
+
+    private static final int REQUEST_CODE_ACCESS_COARSE_LOCATION = 1;
 
     private TextView mTextMessage;
 
@@ -29,7 +41,11 @@ public class MainActivity extends AppCompatActivity {
                     mTextMessage.setText(R.string.title_home);
                     return true;
                 case R.id.navigation_dashboard:
-                    mTextMessage.setText(R.string.title_dashboard);
+//                    mTextMessage.setText(R.string.title_dashboard);
+                    mTextMessage.setText("重新获取定位");
+                    ToastUtils.showShort("重新获取定位信息。");
+                    initLocationOption();
+
                     return true;
                 case R.id.navigation_notifications:
                     mTextMessage.setText(R.string.title_notifications);
@@ -43,6 +59,27 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
+        //Android 6.0 权限问题
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {//如果 API level 是大于等于 23(Android 6.0) 时
+            //判断是否具有权限
+            if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                //判断
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                        Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                    Toast.makeText(MainActivity.this,"KARL-Dujinyang 是否需要打开位置权限",Toast.LENGTH_SHORT).show();
+                }
+                //请求权限
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                        REQUEST_CODE_ACCESS_COARSE_LOCATION);
+            }
+        }
+
+
+
 
 
         initLocationOption();
@@ -68,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
 //可选，默认高精度，设置定位模式，高精度，低功耗，仅设备
         locationOption.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy);
 //可选，默认gcj02，设置返回的定位结果坐标系，如果配合百度地图使用，建议设置为bd09ll;
-        locationOption.setCoorType("gcj02");
+        locationOption.setCoorType("bd09ll");
 //可选，默认0，即仅定位一次，设置发起连续定位请求的间隔需要大于等于1000ms才是有效的
         locationOption.setScanSpan(1000);
 //可选，设置是否需要地址信息，默认不需要
@@ -95,8 +132,34 @@ public class MainActivity extends AppCompatActivity {
         locationOption.setOpenAutoNotifyMode();
 //设置打开自动回调位置模式，该开关打开后，期间只要定位SDK检测到位置变化就会主动回调给开发者
         locationOption.setOpenAutoNotifyMode(3000, 1, LocationClientOption.LOC_SENSITIVITY_HIGHT);
-//开始定位
+
+//        // TODO: 2019/2/14 待定是否有效。
+//        locationOption.setWifiCacheTimeOut(5*60*1000);
+//可选，V7.2版本新增能力
+//如果设置了该接口，首次启动定位时，会先判断当前Wi-Fi是否超出有效期，若超出有效期，会先重新扫描Wi-Fi，然后定位
+        
+        //开始定位
         locationClient.start();
+
+
+
+
+        //开启前台定位服务：
+
+        Notification.Builder builder = new Notification.Builder (MainActivity.this.getApplicationContext());
+//获取一个Notification构造器
+
+        Intent nfIntent = new Intent(MainActivity.this.getApplicationContext(), MainActivity.class);
+        builder.setContentIntent(PendingIntent.getActivity(MainActivity.this, 0, nfIntent, 0)) // 设置PendingIntent
+                .setContentTitle("正在进行后台定位") // 设置下拉列表里的标题
+                .setSmallIcon(R.mipmap.ic_launcher) // 设置状态栏内的小图标
+                .setContentText("后台定位通知") // 设置上下文内容
+                .setAutoCancel(true)
+                .setWhen(System.currentTimeMillis()); // 设置该通知发生的时间
+        Notification notification = null;
+        notification = builder.build();
+        notification.defaults = Notification.DEFAULT_SOUND; //设置为默认的声音
+        locationClient.enableLocInForeground(1001, notification);// 调起前台定位
     }
 
     /**
@@ -121,6 +184,11 @@ public class MainActivity extends AppCompatActivity {
             int errorCode = location.getLocType();
 
 
+            if ("4.9E-324".equals(String.valueOf(latitude))) {
+                Toast.makeText(MainActivity.this, "定位失败，请查看手机是否开启了定位权限", Toast.LENGTH_SHORT).show();
+            }
+
+
             Log.d(TAG, "onReceiveLocation: "
                     + latitude + ", "
                     + longitude + ", "
@@ -128,6 +196,13 @@ public class MainActivity extends AppCompatActivity {
                     + coorType + ", "
                     + errorCode + ", "
             );
+        }
+
+        @Override
+        public void onLocDiagnosticMessage(int i, int i1, String s) {
+            super.onLocDiagnosticMessage(i, i1, s);
+
+            Log.d(TAG, "onLocDiagnosticMessage: i==" + i + ", i1==" + i1 + ", s==" + s);
         }
     }
 }
