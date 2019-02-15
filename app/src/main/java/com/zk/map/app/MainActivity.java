@@ -16,6 +16,20 @@ import android.widget.TextView;
 import com.baidu.location.BDAbstractLocationListener;
 import com.baidu.location.BDLocation;
 import com.baidu.location.Poi;
+import com.baidu.mapapi.animation.Animation;
+import com.baidu.mapapi.animation.ScaleAnimation;
+import com.baidu.mapapi.map.BaiduMap;
+import com.baidu.mapapi.map.BitmapDescriptor;
+import com.baidu.mapapi.map.BitmapDescriptorFactory;
+import com.baidu.mapapi.map.MapBaseIndoorMapInfo;
+import com.baidu.mapapi.map.MapStatus;
+import com.baidu.mapapi.map.MapStatusUpdateFactory;
+import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.Marker;
+import com.baidu.mapapi.map.MarkerOptions;
+import com.baidu.mapapi.map.MyLocationConfiguration;
+import com.baidu.mapapi.map.MyLocationData;
+import com.baidu.mapapi.model.LatLng;
 import com.zk.map.app.service.LocationService;
 
 import java.util.ArrayList;
@@ -26,6 +40,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView LocationResult;
     private Button startLocation;
     private String permissionInfo;
+    private MapView mapView;
+    private BaiduMap mBaiduMap;
 
 
     private static final String TAG = "MainActivity";
@@ -61,15 +77,145 @@ public class MainActivity extends AppCompatActivity {
 
         LocationResult = (TextView) findViewById(R.id.message);
         startLocation = (Button) findViewById(R.id.startLocation);
+        mapView = (MapView) findViewById(R.id.map_view);
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+
+
+        mBaiduMap = mapView.getMap();
+        baiduMapSetting();
 
 
         getPermission();
     }
 
 
+    private void baiduMapSetting() {
+        MapStatus.Builder builder = new MapStatus.Builder();
+//        builder.zoom(18.0f);
+        mBaiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));
 
+        mBaiduMap.setMyLocationEnabled(true);
+
+
+//        mCurrentMode = LocationMode.FOLLOWING;//定位跟随态
+//        mCurrentMode = LocationMode.NORMAL;   //默认为 LocationMode.NORMAL 普通态
+//        mCurrentMode = LocationMode.COMPASS;  //定位罗盘态
+        mBaiduMap.setMyLocationConfiguration(new MyLocationConfiguration(MyLocationConfiguration.LocationMode.FOLLOWING,
+                true, BitmapDescriptorFactory.fromResource(R.drawable.icon_start), 0xAAFFFF88, 0xAA00FF00));
+        //自定义精度圈填充颜色
+//        accuracyCircleFillColor = 0xAAFFFF88;
+        //自定义精度圈边框颜色
+//        accuracyCircleStrokeColor = 0xAA00FF00;
+//        mBaiduMap.setMyLocationConfiguration(mLocationConfiguration)
+
+
+
+
+
+        marker(0, 0);
+        mapType();
+        inDoorMapInfo();
+
+    }
+
+    private void marker(double lat, double lon) {
+
+        if (lat == 0 || lon == 0)
+            return;
+
+        LatLng latLng = new LatLng(lat, lon);
+        //构建Marker图标
+        BitmapDescriptor bitmapDescriptor = BitmapDescriptorFactory.fromResource(R.drawable.icon_start);
+
+        //创建marker
+        MarkerOptions ooA = new MarkerOptions().position(latLng).icon(bitmapDescriptor);
+        //添加marker
+        Marker marker = (Marker) (mBaiduMap.addOverlay(ooA));
+        startSingleScaleAnimation(marker);
+
+//        //构建MarkerOption，用于在地图上添加Marker
+//        OverlayOptions option = new MarkerOptions()
+//                .position(latLng)
+//                .icon(bitmap);
+////在地图上添加Marker，并显示
+//        mBaiduMap.addOverlay(option);
+
+    }
+
+    private void mapType() {
+        //显示卫星图层
+//        mBaiduMap.setMapType(BaiduMap.MAP_TYPE_SATELLITE);
+    }
+
+    private void inDoorMapInfo() {
+        //打开室内图，默认为关闭状态
+        mBaiduMap.setIndoorEnable(true);
+        mBaiduMap.setOnBaseIndoorMapListener(new BaiduMap.OnBaseIndoorMapListener() {
+
+            /**
+             * 地图进入室内图模式回调函数
+             *
+             * @param in 是否进入室内图模式
+             * @param mapBaseIndoorMapInfo 室内图信息
+             */
+            @Override
+            public void onBaseIndoorMapMode(boolean in, MapBaseIndoorMapInfo mapBaseIndoorMapInfo) {
+                if (in) {
+                    // 进入室内图
+                    // 通过获取回调参数 mapBaseIndoorMapInfo 便可获取室内图信息，包含楼层信息，室内ID等
+                } else {
+                    // 移除室内图
+                }
+            }
+        });
+
+        //实现楼层间地图切换,展示不同楼层的室内图
+//        MapBaseIndoorMapInfo.SwitchFloorError switchFloorError = mBaiduMap.switchBaseIndoorMapFloor(strFloor, floorID);
+        //上面代码中，strFloor表示室内图楼层,格式为F1,B1… strID 表示室内图ID；返回值switchFloorError 用于标识楼层切换错误信息， 具体如下：
+        //切换楼层成功    SWITCH_OK
+        // 切换楼层, 室内ID信息错误   FLOOR_INFO_ERROR,
+        //楼层溢出  FLOOR_OVERLFLOW,
+        //切换楼层室内ID与当前聚焦室内ID不匹配  FOCUSED_ID_ERROR,
+        //切换楼层失败    SWITCH_ERROR
+    }
+
+
+    private Animation getScaleAnimation() {
+        //创建缩放动画
+        ScaleAnimation mScale = new ScaleAnimation(1f, 2f, 1f);
+        //设置动画执行时间
+        mScale.setDuration(2000);
+        //动画重复模式
+        mScale.setRepeatMode(Animation.RepeatMode.RESTART);
+        //动画重复次数
+        mScale.setRepeatCount(1);
+        //设置缩放动画监听
+        mScale.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart() {
+            }
+            @Override
+            public void onAnimationEnd() {
+            }
+            @Override
+            public void onAnimationCancel() {
+            }
+            @Override
+            public void onAnimationRepeat() {
+            }
+        });
+        return mScale;
+    }
+    /**
+     * 开启单边缩放动画 X或Y方向
+     */
+    public void startSingleScaleAnimation(Marker marker) {
+        //marker设置动画
+        marker.setAnimation(getScaleAnimation());
+        //开启marker动画
+        marker.startAnimation();
+    }
 
 
     @TargetApi(23)
@@ -128,6 +274,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //在activity执行onResume时必须调用mMapView. onResume ()
+        mapView.onResume();
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        //在activity执行onPause时必须调用mMapView. onPause ()
+        mapView.onPause();
+    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        //在activity执行onDestroy时必须调用mMapView.onDestroy()
+        mapView.onDestroy();
+    }
 
     /***
      * Stop location service
@@ -262,6 +426,30 @@ public class MainActivity extends AppCompatActivity {
                     sb.append("无法获取有效定位依据导致定位失败，一般是由于手机的原因，处于飞行模式下一般会造成这种结果，可以试着重启手机");
                 }
                 logMsg(sb.toString());
+
+
+
+
+                //西单大悦城
+//                116.379299,39.916967
+                double lat = 116.379299;
+                double lon = 39.916967;
+
+                lat = location.getLatitude();
+                lon = location.getLongitude();
+
+
+                marker(lat, lon);
+
+
+
+
+                MyLocationData locData = new MyLocationData.Builder()
+                        .accuracy(location.getRadius())
+                        // 此处设置开发者获取到的方向信息，顺时针0-360
+                        .direction(location.getDirection()).latitude(location.getLatitude())
+                        .longitude(location.getLongitude()).build();
+                mBaiduMap.setMyLocationData(locData);
             }
         }
 
