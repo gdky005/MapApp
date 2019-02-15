@@ -8,6 +8,8 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -30,6 +32,7 @@ import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.model.LatLng;
+import com.blankj.utilcode.util.ToastUtils;
 import com.zk.map.app.service.LocationService;
 
 import java.util.ArrayList;
@@ -42,7 +45,12 @@ public class MainActivity extends AppCompatActivity {
     private String permissionInfo;
     private MapView mapView;
     private BaiduMap mBaiduMap;
+    private Button switchFloor;
+    private String floor_info;
 
+    // 保存当前楼层的信息。
+    private ArrayList<String> floors;
+    private String floor_id;
 
     private static final String TAG = "MainActivity";
 
@@ -78,8 +86,45 @@ public class MainActivity extends AppCompatActivity {
         LocationResult = (TextView) findViewById(R.id.message);
         startLocation = (Button) findViewById(R.id.startLocation);
         mapView = (MapView) findViewById(R.id.map_view);
+        switchFloor = (Button) findViewById(R.id.switch_floor);
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+        switchFloor.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (floors != null && floors.size() > 0) {
+
+                    if (!TextUtils.isEmpty(floor_info)) {
+                        int i =  floors.indexOf(floor_info);
+                        i++;
+                        if (i > 0 && i < floors.size()) {
+                            //切换楼层
+                            floor_info = floors.get(i);
+
+                        } else {
+                            floor_info = floors.get(0);
+                        }
+
+
+                    } else {
+                        floor_info = floors.get(0);
+                    }
+
+                    ToastUtils.showShort("当前楼层是：" + floor_info);
+
+                    // 切换楼层信息
+                    //strID 通过 mMapBaseIndoorMapInfo.getID()方法获得
+                    MapBaseIndoorMapInfo.SwitchFloorError switchFloorError = mBaiduMap.switchBaseIndoorMapFloor(floor_info, floor_id);
+
+                    Log.d(TAG, "onClick: switchFloorError==" + switchFloorError);
+
+                    return;
+
+
+                }
+                ToastUtils.showShort("切换楼层错误。");
+            }
+        });
 
 
         mBaiduMap = mapView.getMap();
@@ -164,6 +209,19 @@ public class MainActivity extends AppCompatActivity {
                 if (in) {
                     // 进入室内图
                     // 通过获取回调参数 mapBaseIndoorMapInfo 便可获取室内图信息，包含楼层信息，室内ID等
+
+
+                    floors = mapBaseIndoorMapInfo.getFloors();
+                    floor_id = mapBaseIndoorMapInfo.getID();
+
+                    Log.d(TAG, "onBaseIndoorMapMode:  当前的楼层信息：" + floors);
+
+//                    floor_info = floors.get(0);
+
+//                    // 切换楼层信息
+////strID 通过 mMapBaseIndoorMapInfo.getID()方法获得
+//                    SwitchFloorError switchFloorError = mBaiduMap.switchBaseIndoorMapFloor(strFloor, strID);
+
                 } else {
                     // 移除室内图
                 }
