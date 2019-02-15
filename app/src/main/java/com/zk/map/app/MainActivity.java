@@ -28,13 +28,9 @@ public class MainActivity extends AppCompatActivity {
     private String permissionInfo;
 
 
-
-
     private static final String TAG = "MainActivity";
 
     private final int SDK_PERMISSION_REQUEST = 127;
-
-    private static final int REQUEST_CODE_ACCESS_COARSE_LOCATION = 1;
 
     private TextView mTextMessage;
 
@@ -69,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
 
-        getPersimmions();
+        getPermission();
     }
 
 
@@ -77,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     @TargetApi(23)
-    private void getPersimmions() {
+    private void getPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             ArrayList<String> permissions = new ArrayList<String>();
             /***
